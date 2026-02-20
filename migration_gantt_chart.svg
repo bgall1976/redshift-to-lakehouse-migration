@@ -1,0 +1,386 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 1260" width="1100" height="1260" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <linearGradient id="g0" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#7a8899"/>
+    </linearGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#3672e0"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#8b6cf0"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#db2777"/>
+      <stop offset="100%" stop-color="#e84d93"/>
+    </linearGradient>
+    <linearGradient id="g4" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="100%" stop-color="#f07430"/>
+    </linearGradient>
+    <linearGradient id="g5" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#0891b2"/>
+      <stop offset="100%" stop-color="#22b8cf"/>
+    </linearGradient>
+    <linearGradient id="g6" x1="0" y1="0" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#22b07a"/>
+    </linearGradient>
+    <filter id="s0" x="-4%" y="-20%" width="108%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#64748b" flood-opacity="0.25"/></filter>
+    <filter id="s1" x="-4%" y="-20%" width="108%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#2563eb" flood-opacity="0.25"/></filter>
+    <filter id="s2" x="-4%" y="-20%" width="108%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#7c3aed" flood-opacity="0.25"/></filter>
+    <filter id="s3" x="-4%" y="-20%" width="108%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#db2777" flood-opacity="0.25"/></filter>
+    <filter id="s4" x="-4%" y="-20%" width="108%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#ea580c" flood-opacity="0.25"/></filter>
+    <filter id="s5" x="-4%" y="-20%" width="108%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#0891b2" flood-opacity="0.25"/></filter>
+    <filter id="s6" x="-4%" y="-20%" width="108%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#059669" flood-opacity="0.25"/></filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="1260" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="40" y="42" font-size="22" font-weight="700" fill="#1a1d27" letter-spacing="-0.5">Redshift/dbt to Databricks Lakehouse — Migration Timeline</text>
+  <text x="40" y="64" font-size="13" fill="#6b7085">18-week phased migration with parallel validation and incremental cutover</text>
+
+  <!-- Legend row 1 -->
+  <rect x="40" y="82" width="10" height="10" rx="2" fill="#64748b"/>
+  <text x="56" y="92" font-size="11" font-weight="500" fill="#6b7085">Phase 0 · Discovery</text>
+  <rect x="195" y="82" width="10" height="10" rx="2" fill="#2563eb"/>
+  <text x="211" y="92" font-size="11" font-weight="500" fill="#6b7085">Phase 1 · Foundation</text>
+  <rect x="355" y="82" width="10" height="10" rx="2" fill="#7c3aed"/>
+  <text x="371" y="92" font-size="11" font-weight="500" fill="#6b7085">Phase 2 · Bronze &amp; Silver</text>
+  <rect x="535" y="82" width="10" height="10" rx="2" fill="#db2777"/>
+  <text x="551" y="92" font-size="11" font-weight="500" fill="#6b7085">Phase 3 · Gold Layer</text>
+  <!-- Legend row 2 -->
+  <rect x="40" y="98" width="10" height="10" rx="2" fill="#ea580c"/>
+  <text x="56" y="108" font-size="11" font-weight="500" fill="#6b7085">Phase 4 · Governance</text>
+  <rect x="195" y="98" width="10" height="10" rx="2" fill="#0891b2"/>
+  <text x="211" y="108" font-size="11" font-weight="500" fill="#6b7085">Phase 5 · Validation &amp; Cutover</text>
+  <rect x="395" y="98" width="10" height="10" rx="2" fill="#059669"/>
+  <text x="411" y="108" font-size="11" font-weight="500" fill="#6b7085">Phase 6 · Decommission</text>
+
+  <!--
+    Grid: taskCol=280, gridStart=280, colWidth=42 (18 weeks × 42 = 756), rowHeight=40
+    Container: x=30, width=1010 (280 task + 756 grid - 26 padding = ~1010)
+    Week center = gridStart + (weekNum-1)*42 + 21
+  -->
+
+  <!-- Outer container -->
+  <rect x="30" y="125" width="1040" height="1120" rx="12" fill="#ffffff" stroke="#e2e4ea" stroke-width="1"/>
+
+  <!-- ====== PHASE 0 — Discovery & Inventory (Wk 1-2) ====== -->
+  <rect x="31" y="126" width="249" height="37" fill="rgba(100,116,139,0.07)"/>
+  <text x="48" y="149" font-size="13" font-weight="700" fill="#64748b">Phase 0 — Discovery &amp; Inventory</text>
+  <rect x="280" y="126" width="760" height="37" fill="#fafbfc"/>
+  <text x="301" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">1</text>
+  <text x="343" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">2</text>
+  <text x="385" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">3</text>
+  <text x="427" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">4</text>
+  <text x="469" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">5</text>
+  <text x="511" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">6</text>
+  <text x="553" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">7</text>
+  <text x="595" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">8</text>
+  <text x="637" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">9</text>
+  <text x="679" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">10</text>
+  <text x="721" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">11</text>
+  <text x="763" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">12</text>
+  <text x="805" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">13</text>
+  <text x="847" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">14</text>
+  <text x="889" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">15</text>
+  <text x="931" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">16</text>
+  <text x="973" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">17</text>
+  <text x="1015" y="149" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">18</text>
+  <line x1="31" y1="163" x2="1069" y2="163" stroke="#e2e4ea" stroke-width="1"/>
+
+  <!-- Vertical grid for Phase 0 -->
+  <line x1="280" y1="126" x2="280" y2="323" stroke="#e2e4ea" stroke-width="0.5"/>
+  <line x1="322" y1="163" x2="322" y2="323" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="364" y1="163" x2="364" y2="323" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: dbt Model Audit & DAG — Wk 1-2 -->
+  <text x="48" y="189" font-size="12" fill="#1a1d27">dbt Model Audit &amp; DAG Analysis</text>
+  <rect x="284" y="175" width="76" height="22" rx="5" fill="url(#g0)" filter="url(#s0)"/>
+  <line x1="31" y1="203" x2="1069" y2="203" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Redshift Schema Inventory — Wk 1-2 -->
+  <text x="48" y="229" font-size="12" fill="#1a1d27">Redshift Schema Inventory</text>
+  <rect x="284" y="215" width="76" height="22" rx="5" fill="url(#g0)" filter="url(#s0)"/>
+  <line x1="31" y1="243" x2="1069" y2="243" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Stakeholder & Consumer Mapping — Wk 1-2 -->
+  <text x="48" y="269" font-size="12" fill="#1a1d27">Stakeholder &amp; Consumer Mapping</text>
+  <rect x="284" y="255" width="76" height="22" rx="5" fill="url(#g0)" filter="url(#s0)"/>
+  <line x1="31" y1="283" x2="1069" y2="283" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Compliance Requirements — Wk 1-2 -->
+  <text x="48" y="309" font-size="12" fill="#1a1d27">Compliance &amp; Data Classification</text>
+  <rect x="284" y="295" width="76" height="22" rx="5" fill="url(#g0)" filter="url(#s0)"/>
+  <line x1="31" y1="323" x2="1069" y2="323" stroke="#e2e4ea" stroke-width="0.5"/>
+
+  <!-- ====== PHASE 1 — Foundation (Wk 3-4) ====== -->
+  <rect x="31" y="324" width="249" height="37" fill="rgba(37,99,235,0.07)"/>
+  <text x="48" y="347" font-size="13" font-weight="700" fill="#2563eb">Phase 1 — Foundation &amp; Infrastructure</text>
+  <rect x="280" y="324" width="760" height="37" fill="#fafbfc"/>
+  <text x="301" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">1</text>
+  <text x="343" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">2</text>
+  <text x="385" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">3</text>
+  <text x="427" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">4</text>
+  <text x="469" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">5</text>
+  <text x="511" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">6</text>
+  <text x="553" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">7</text>
+  <text x="595" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">8</text>
+  <text x="637" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">9</text>
+  <text x="679" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">10</text>
+  <text x="721" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">11</text>
+  <text x="763" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">12</text>
+  <text x="805" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">13</text>
+  <text x="847" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">14</text>
+  <text x="889" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">15</text>
+  <text x="931" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">16</text>
+  <text x="973" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">17</text>
+  <text x="1015" y="347" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">18</text>
+  <line x1="31" y1="361" x2="1069" y2="361" stroke="#e2e4ea" stroke-width="1"/>
+
+  <line x1="280" y1="324" x2="280" y2="521" stroke="#e2e4ea" stroke-width="0.5"/>
+  <line x1="364" y1="361" x2="364" y2="521" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="406" y1="361" x2="406" y2="521" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="448" y1="361" x2="448" y2="521" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: S3 Storage Layer (Terraform) — Wk 3-4 -->
+  <text x="48" y="387" font-size="12" fill="#1a1d27">S3 Storage Layer (Terraform)</text>
+  <rect x="368" y="373" width="76" height="22" rx="5" fill="url(#g1)" filter="url(#s1)"/>
+  <line x1="31" y1="401" x2="1069" y2="401" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Unity Catalog Configuration — Wk 3-4 -->
+  <text x="48" y="427" font-size="12" fill="#1a1d27">Unity Catalog Configuration</text>
+  <rect x="368" y="413" width="76" height="22" rx="5" fill="url(#g1)" filter="url(#s1)"/>
+  <line x1="31" y1="441" x2="1069" y2="441" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: CI/CD & Asset Bundles — Wk 3-4 -->
+  <text x="48" y="467" font-size="12" fill="#1a1d27">CI/CD Pipeline &amp; Asset Bundles</text>
+  <rect x="368" y="453" width="76" height="22" rx="5" fill="url(#g1)" filter="url(#s1)"/>
+  <line x1="31" y1="481" x2="1069" y2="481" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Dev Environment — Wk 3-4 -->
+  <text x="48" y="507" font-size="12" fill="#1a1d27">Dev Environment &amp; Cluster Policies</text>
+  <rect x="368" y="493" width="76" height="22" rx="5" fill="url(#g1)" filter="url(#s1)"/>
+  <line x1="31" y1="521" x2="1069" y2="521" stroke="#e2e4ea" stroke-width="0.5"/>
+
+  <!-- ====== PHASE 2 — Bronze & Silver (Wk 5-8) ====== -->
+  <rect x="31" y="522" width="249" height="37" fill="rgba(124,58,237,0.07)"/>
+  <text x="48" y="545" font-size="13" font-weight="700" fill="#7c3aed">Phase 2 — Bronze &amp; Silver Layers</text>
+  <rect x="280" y="522" width="760" height="37" fill="#fafbfc"/>
+  <text x="301" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">1</text>
+  <text x="343" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">2</text>
+  <text x="385" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">3</text>
+  <text x="427" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">4</text>
+  <text x="469" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">5</text>
+  <text x="511" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">6</text>
+  <text x="553" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">7</text>
+  <text x="595" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">8</text>
+  <text x="637" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">9</text>
+  <text x="679" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">10</text>
+  <text x="721" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">11</text>
+  <text x="763" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">12</text>
+  <text x="805" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">13</text>
+  <text x="847" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">14</text>
+  <text x="889" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">15</text>
+  <text x="931" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">16</text>
+  <text x="973" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">17</text>
+  <text x="1015" y="545" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">18</text>
+  <line x1="31" y1="559" x2="1069" y2="559" stroke="#e2e4ea" stroke-width="1"/>
+
+  <line x1="280" y1="522" x2="280" y2="719" stroke="#e2e4ea" stroke-width="0.5"/>
+  <line x1="448" y1="559" x2="448" y2="719" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="490" y1="559" x2="490" y2="719" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="532" y1="559" x2="532" y2="719" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="574" y1="559" x2="574" y2="719" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="616" y1="559" x2="616" y2="719" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Bronze Ingestion (Auto Loader) — Wk 5-6 -->
+  <text x="48" y="585" font-size="12" fill="#1a1d27">Bronze Ingestion (Auto Loader)</text>
+  <rect x="452" y="571" width="76" height="22" rx="5" fill="url(#g2)" filter="url(#s2)"/>
+  <line x1="31" y1="599" x2="1069" y2="599" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Silver Transforms (dbt Staging) — Wk 6-8 -->
+  <text x="48" y="625" font-size="12" fill="#1a1d27">Silver Transforms (dbt Staging)</text>
+  <rect x="494" y="611" width="118" height="22" rx="5" fill="url(#g2)" filter="url(#s2)"/>
+  <line x1="31" y1="639" x2="1069" y2="639" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Data Quality Framework — Wk 6-8 -->
+  <text x="48" y="665" font-size="12" fill="#1a1d27">Data Quality Framework</text>
+  <rect x="494" y="651" width="118" height="22" rx="5" fill="url(#g2)" filter="url(#s2)"/>
+  <line x1="31" y1="679" x2="1069" y2="679" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Unit Tests & Row Validation — Wk 7-8 -->
+  <text x="48" y="705" font-size="12" fill="#1a1d27">Unit Tests &amp; Row Count Validation</text>
+  <rect x="536" y="691" width="76" height="22" rx="5" fill="url(#g2)" filter="url(#s2)"/>
+  <line x1="31" y1="719" x2="1069" y2="719" stroke="#e2e4ea" stroke-width="0.5"/>
+
+  <!-- ====== PHASE 3 — Gold Layer (Wk 9-12) ====== -->
+  <rect x="31" y="720" width="249" height="37" fill="rgba(219,39,119,0.07)"/>
+  <text x="48" y="743" font-size="13" font-weight="700" fill="#db2777">Phase 3 — Gold Layer (Star Schema)</text>
+  <rect x="280" y="720" width="760" height="37" fill="#fafbfc"/>
+  <text x="301" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">1</text>
+  <text x="343" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">2</text>
+  <text x="385" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">3</text>
+  <text x="427" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">4</text>
+  <text x="469" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">5</text>
+  <text x="511" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">6</text>
+  <text x="553" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">7</text>
+  <text x="595" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">8</text>
+  <text x="637" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">9</text>
+  <text x="679" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">10</text>
+  <text x="721" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">11</text>
+  <text x="763" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">12</text>
+  <text x="805" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">13</text>
+  <text x="847" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">14</text>
+  <text x="889" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">15</text>
+  <text x="931" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">16</text>
+  <text x="973" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">17</text>
+  <text x="1015" y="743" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">18</text>
+  <line x1="31" y1="757" x2="1069" y2="757" stroke="#e2e4ea" stroke-width="1"/>
+
+  <line x1="280" y1="720" x2="280" y2="877" stroke="#e2e4ea" stroke-width="0.5"/>
+  <line x1="616" y1="757" x2="616" y2="877" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="658" y1="757" x2="658" y2="877" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="700" y1="757" x2="700" y2="877" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="742" y1="757" x2="742" y2="877" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Dimension Tables (SCD Type 2) — Wk 9-11 -->
+  <text x="48" y="783" font-size="12" fill="#1a1d27">Dimension Tables (SCD Type 2)</text>
+  <rect x="620" y="769" width="118" height="22" rx="5" fill="url(#g3)" filter="url(#s3)"/>
+  <line x1="31" y1="797" x2="1069" y2="797" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Fact Tables & Joins — Wk 10-12 -->
+  <text x="48" y="823" font-size="12" fill="#1a1d27">Fact Tables &amp; Star Schema Joins</text>
+  <rect x="662" y="809" width="118" height="22" rx="5" fill="url(#g3)" filter="url(#s3)"/>
+  <line x1="31" y1="837" x2="1069" y2="837" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Partitioning & Optimization — Wk 11-12 -->
+  <text x="48" y="863" font-size="12" fill="#1a1d27">Partitioning &amp; Query Optimization</text>
+  <rect x="700" y="849" width="80" height="22" rx="5" fill="url(#g3)" filter="url(#s3)"/>
+  <line x1="31" y1="877" x2="1069" y2="877" stroke="#e2e4ea" stroke-width="0.5"/>
+
+  <!-- ====== PHASE 4 — Governance (Wk 11-13, overlaps Phase 3) ====== -->
+  <rect x="31" y="878" width="249" height="37" fill="rgba(234,88,12,0.07)"/>
+  <text x="48" y="901" font-size="13" font-weight="700" fill="#ea580c">Phase 4 — Governance &amp; Compliance</text>
+  <rect x="280" y="878" width="760" height="37" fill="#fafbfc"/>
+  <text x="301" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">1</text>
+  <text x="343" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">2</text>
+  <text x="385" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">3</text>
+  <text x="427" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">4</text>
+  <text x="469" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">5</text>
+  <text x="511" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">6</text>
+  <text x="553" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">7</text>
+  <text x="595" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">8</text>
+  <text x="637" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">9</text>
+  <text x="679" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">10</text>
+  <text x="721" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">11</text>
+  <text x="763" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">12</text>
+  <text x="805" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">13</text>
+  <text x="847" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">14</text>
+  <text x="889" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">15</text>
+  <text x="931" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">16</text>
+  <text x="973" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">17</text>
+  <text x="1015" y="901" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">18</text>
+  <line x1="31" y1="915" x2="1069" y2="915" stroke="#e2e4ea" stroke-width="1"/>
+
+  <line x1="280" y1="878" x2="280" y2="1035" stroke="#e2e4ea" stroke-width="0.5"/>
+  <line x1="700" y1="915" x2="700" y2="1035" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="742" y1="915" x2="742" y2="1035" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="784" y1="915" x2="784" y2="1035" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: RBAC & PII Masking — Wk 11-12 -->
+  <text x="48" y="941" font-size="12" fill="#1a1d27">RBAC &amp; PII Column Masking</text>
+  <rect x="700" y="927" width="80" height="22" rx="5" fill="url(#g4)" filter="url(#s4)"/>
+  <line x1="31" y1="955" x2="1069" y2="955" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Audit Logging & Classification — Wk 12-13 -->
+  <text x="48" y="981" font-size="12" fill="#1a1d27">Audit Logging &amp; Data Classification</text>
+  <rect x="742" y="967" width="80" height="22" rx="5" fill="url(#g4)" filter="url(#s4)"/>
+  <line x1="31" y1="995" x2="1069" y2="995" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Data Subject Request Workflow — Wk 12-13 -->
+  <text x="48" y="1021" font-size="12" fill="#1a1d27">Data Subject Request Workflow</text>
+  <rect x="742" y="1007" width="80" height="22" rx="5" fill="url(#g4)" filter="url(#s4)"/>
+  <line x1="31" y1="1035" x2="1069" y2="1035" stroke="#e2e4ea" stroke-width="0.5"/>
+
+  <!-- ====== PHASE 5 — Validation & Cutover (Wk 13-16) ====== -->
+  <rect x="31" y="1036" width="249" height="37" fill="rgba(8,145,178,0.07)"/>
+  <text x="48" y="1059" font-size="13" font-weight="700" fill="#0891b2">Phase 5 — Validation &amp; Cutover</text>
+  <rect x="280" y="1036" width="760" height="37" fill="#fafbfc"/>
+  <text x="301" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">1</text>
+  <text x="343" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">2</text>
+  <text x="385" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">3</text>
+  <text x="427" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">4</text>
+  <text x="469" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">5</text>
+  <text x="511" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">6</text>
+  <text x="553" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">7</text>
+  <text x="595" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">8</text>
+  <text x="637" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">9</text>
+  <text x="679" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">10</text>
+  <text x="721" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">11</text>
+  <text x="763" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">12</text>
+  <text x="805" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">13</text>
+  <text x="847" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">14</text>
+  <text x="889" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">15</text>
+  <text x="931" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">16</text>
+  <text x="973" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">17</text>
+  <text x="1015" y="1059" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">18</text>
+  <line x1="31" y1="1073" x2="1069" y2="1073" stroke="#e2e4ea" stroke-width="1"/>
+
+  <line x1="280" y1="1036" x2="280" y2="1153" stroke="#e2e4ea" stroke-width="0.5"/>
+  <line x1="784" y1="1073" x2="784" y2="1153" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="826" y1="1073" x2="826" y2="1153" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="868" y1="1073" x2="868" y2="1153" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="910" y1="1073" x2="910" y2="1153" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="952" y1="1073" x2="952" y2="1153" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Parallel Run & Reconciliation — Wk 13-16 -->
+  <text x="48" y="1099" font-size="12" fill="#1a1d27">Parallel Run &amp; Reconciliation</text>
+  <rect x="788" y="1085" width="160" height="22" rx="5" fill="url(#g5)" filter="url(#s5)"/>
+  <line x1="31" y1="1113" x2="1069" y2="1113" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Consumer Migration & Perf Benchmark — Wk 14-16 -->
+  <text x="48" y="1139" font-size="12" fill="#1a1d27">Consumer Migration &amp; Benchmarking</text>
+  <rect x="830" y="1125" width="118" height="22" rx="5" fill="url(#g5)" filter="url(#s5)"/>
+  <line x1="31" y1="1153" x2="1069" y2="1153" stroke="#e2e4ea" stroke-width="0.5"/>
+
+  <!-- ====== PHASE 6 — Decommission (Wk 17-18) ====== -->
+  <rect x="31" y="1154" width="249" height="37" fill="rgba(5,150,105,0.07)"/>
+  <text x="48" y="1177" font-size="13" font-weight="700" fill="#059669">Phase 6 — Decommission &amp; Optimize</text>
+  <rect x="280" y="1154" width="760" height="37" fill="#fafbfc"/>
+  <text x="301" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">1</text>
+  <text x="343" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">2</text>
+  <text x="385" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">3</text>
+  <text x="427" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">4</text>
+  <text x="469" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">5</text>
+  <text x="511" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">6</text>
+  <text x="553" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">7</text>
+  <text x="595" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">8</text>
+  <text x="637" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">9</text>
+  <text x="679" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">10</text>
+  <text x="721" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">11</text>
+  <text x="763" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">12</text>
+  <text x="805" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">13</text>
+  <text x="847" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">14</text>
+  <text x="889" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">15</text>
+  <text x="931" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">16</text>
+  <text x="973" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">17</text>
+  <text x="1015" y="1177" font-size="9" font-weight="600" fill="#6b7085" text-anchor="middle">18</text>
+  <line x1="31" y1="1191" x2="1069" y2="1191" stroke="#e2e4ea" stroke-width="1"/>
+
+  <line x1="280" y1="1154" x2="280" y2="1244" stroke="#e2e4ea" stroke-width="0.5"/>
+  <line x1="952" y1="1191" x2="952" y2="1244" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="994" y1="1191" x2="994" y2="1244" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+  <line x1="1036" y1="1191" x2="1036" y2="1244" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+  <!-- Task: Redshift Archive & Shutdown — Wk 17-18 -->
+  <text x="48" y="1217" font-size="12" fill="#1a1d27">Redshift Archive &amp; Shutdown</text>
+  <rect x="956" y="1203" width="76" height="22" rx="5" fill="url(#g6)" filter="url(#s6)"/>
+  <line x1="31" y1="1231" x2="1069" y2="1231" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+
+</svg>
