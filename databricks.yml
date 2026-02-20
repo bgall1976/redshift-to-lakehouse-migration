@@ -274,6 +274,8 @@ resources:
 
       environments:
         - environment_key: smoke_env
+          spec:
+            client: "1"
 
       tasks:
         - task_key: verify_bronze_access
