@@ -5,38 +5,38 @@ Legacy equivalent: COPY raw.properties FROM 's3://...' CSV
 Target table: fintech_catalog.bronze.raw_properties
 """
 
-from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType
+from pyspark.sql.types import DoubleType, IntegerType, StringType, StructField, StructType
 
-
-RAW_PROPERTIES_SCHEMA = StructType([
-    StructField("property_id", StringType(), False),
-    StructField("street_address", StringType(), True),
-    StructField("city", StringType(), True),
-    StructField("state", StringType(), True),
-    StructField("zip_code", StringType(), True),
-    StructField("county", StringType(), True),
-    StructField("latitude", DoubleType(), True),
-    StructField("longitude", DoubleType(), True),
-    StructField("year_built", IntegerType(), True),
-    StructField("square_footage", IntegerType(), True),
-    StructField("construction_type", StringType(), True),
-    StructField("roof_type", StringType(), True),
-    StructField("stories", IntegerType(), True),
-    StructField("occupancy_type", StringType(), True),
-    StructField("flood_zone", StringType(), True),
-    StructField("wind_zone", StringType(), True),
-    StructField("property_value", DoubleType(), True),
-    StructField("created_at", StringType(), True),
-    StructField("updated_at", StringType(), True),
-])
+RAW_PROPERTIES_SCHEMA = StructType(
+    [
+        StructField("property_id", StringType(), False),
+        StructField("street_address", StringType(), True),
+        StructField("city", StringType(), True),
+        StructField("state", StringType(), True),
+        StructField("zip_code", StringType(), True),
+        StructField("county", StringType(), True),
+        StructField("latitude", DoubleType(), True),
+        StructField("longitude", DoubleType(), True),
+        StructField("year_built", IntegerType(), True),
+        StructField("square_footage", IntegerType(), True),
+        StructField("construction_type", StringType(), True),
+        StructField("roof_type", StringType(), True),
+        StructField("stories", IntegerType(), True),
+        StructField("occupancy_type", StringType(), True),
+        StructField("flood_zone", StringType(), True),
+        StructField("wind_zone", StringType(), True),
+        StructField("property_value", DoubleType(), True),
+        StructField("created_at", StringType(), True),
+        StructField("updated_at", StringType(), True),
+    ]
+)
 
 
 def add_metadata_columns(df: DataFrame, source_path: str) -> DataFrame:
     return (
-        df
-        .withColumn("_ingestion_timestamp", F.current_timestamp())
+        df.withColumn("_ingestion_timestamp", F.current_timestamp())
         .withColumn("_source_file", F.lit(source_path))
         .withColumn("_batch_id", F.lit(F.current_timestamp().cast("long")))
     )
@@ -44,8 +44,7 @@ def add_metadata_columns(df: DataFrame, source_path: str) -> DataFrame:
 
 def ingest_batch(spark: SparkSession, source_path: str, target_table: str) -> int:
     df_raw = (
-        spark.read
-        .option("header", "true")
+        spark.read.option("header", "true")
         .option("inferSchema", "false")
         .schema(RAW_PROPERTIES_SCHEMA)
         .csv(source_path)
@@ -55,8 +54,7 @@ def ingest_batch(spark: SparkSession, source_path: str, target_table: str) -> in
     df_bronze = add_metadata_columns(df_raw, source_path)
 
     (
-        df_bronze.write
-        .format("delta")
+        df_bronze.write.format("delta")
         .mode("append")
         .option("mergeSchema", "true")
         .saveAsTable(target_table)
@@ -66,6 +64,7 @@ def ingest_batch(spark: SparkSession, source_path: str, target_table: str) -> in
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", required=True)
     parser.add_argument("--target", default="fintech_catalog.bronze.raw_properties")

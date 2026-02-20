@@ -6,10 +6,9 @@ relationships) with PySpark equivalents that produce structured results
 for monitoring and alerting.
 """
 
+from loguru import logger
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from typing import Any
-from loguru import logger
 
 
 def check_not_null(df: DataFrame, column: str) -> dict:
@@ -65,8 +64,7 @@ def check_accepted_values(df: DataFrame, column: str, accepted: list[str]) -> di
     }
 
 
-def check_relationships(df: DataFrame, column: str,
-                        ref_df: DataFrame, ref_column: str) -> dict:
+def check_relationships(df: DataFrame, column: str, ref_df: DataFrame, ref_column: str) -> dict:
     """Equivalent to dbt relationships test (referential integrity)."""
     orphans = df.join(ref_df, df[column] == ref_df[ref_column], "left_anti")
     orphan_count = orphans.count()
@@ -113,7 +111,9 @@ def log_quality_results(table_name: str, results: dict) -> None:
     failed = sum(1 for r in results.values() if not r["passed"])
     total = len(results)
 
-    logger.info(f"Data Quality Results for {table_name}: {passed}/{total} passed, {failed}/{total} failed")
+    logger.info(
+        f"Data Quality Results for {table_name}: {passed}/{total} passed, {failed}/{total} failed"
+    )
 
     for check_name, result in results.items():
         if result["passed"]:

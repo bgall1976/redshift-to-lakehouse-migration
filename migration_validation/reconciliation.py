@@ -9,22 +9,22 @@ Usage:
     python reconciliation.py --legacy-config config/redshift.yml --lakehouse-config config/databricks.yml
 """
 
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql import functions as F
 from dataclasses import dataclass
-from loguru import logger
-from typing import Optional
+
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import functions as F
 
 
 @dataclass
 class ReconciliationResult:
     """Result of a single reconciliation check."""
+
     table_name: str
     check_type: str
     passed: bool
     legacy_value: any
     lakehouse_value: any
-    difference: Optional[float] = None
+    difference: float | None = None
     tolerance: float = 0.0
     details: str = ""
 
@@ -36,8 +36,9 @@ class MigrationReconciler:
         self.spark = spark
         self.results: list[ReconciliationResult] = []
 
-    def compare_row_counts(self, legacy_df: DataFrame, lakehouse_df: DataFrame,
-                           table_name: str) -> ReconciliationResult:
+    def compare_row_counts(
+        self, legacy_df: DataFrame, lakehouse_df: DataFrame, table_name: str
+    ) -> ReconciliationResult:
         """Check 1: Row counts must match exactly."""
         legacy_count = legacy_df.count()
         lakehouse_count = lakehouse_df.count()
@@ -49,14 +50,19 @@ class MigrationReconciler:
             legacy_value=legacy_count,
             lakehouse_value=lakehouse_count,
             difference=abs(legacy_count - lakehouse_count),
-            details=f"Legacy: {legacy_count:,} | Lakehouse: {lakehouse_count:,}"
+            details=f"Legacy: {legacy_count:,} | Lakehouse: {lakehouse_count:,}",
         )
         self.results.append(result)
         return result
 
-    def compare_aggregates(self, legacy_df: DataFrame, lakehouse_df: DataFrame,
-                           table_name: str, numeric_columns: list[str],
-                           tolerance: float = 0.0001) -> list[ReconciliationResult]:
+    def compare_aggregates(
+        self,
+        legacy_df: DataFrame,
+        lakehouse_df: DataFrame,
+        table_name: str,
+        numeric_columns: list[str],
+        tolerance: float = 0.0001,
+    ) -> list[ReconciliationResult]:
         """Check 2: SUM of numeric columns must match within tolerance."""
         results = []
         for col_name in numeric_columns:
@@ -78,26 +84,25 @@ class MigrationReconciler:
                 lakehouse_value=float(lakehouse_sum),
                 difference=pct_diff,
                 tolerance=tolerance,
-                details=f"SUM({col_name}): Legacy={legacy_sum:.2f} | Lakehouse={lakehouse_sum:.2f} | Diff={pct_diff:.6%}"
+                details=f"SUM({col_name}): Legacy={legacy_sum:.2f} | Lakehouse={lakehouse_sum:.2f} | Diff={pct_diff:.6%}",
             )
             results.append(result)
             self.results.append(result)
 
         return results
 
-    def compare_distributions(self, legacy_df: DataFrame, lakehouse_df: DataFrame,
-                              table_name: str, categorical_columns: list[str]) -> list[ReconciliationResult]:
+    def compare_distributions(
+        self,
+        legacy_df: DataFrame,
+        lakehouse_df: DataFrame,
+        table_name: str,
+        categorical_columns: list[str],
+    ) -> list[ReconciliationResult]:
         """Check 3: Value distributions for categorical columns must match."""
         results = []
         for col_name in categorical_columns:
-            legacy_dist = (
-                legacy_df.groupBy(col_name).count()
-                .orderBy(col_name).collect()
-            )
-            lakehouse_dist = (
-                lakehouse_df.groupBy(col_name).count()
-                .orderBy(col_name).collect()
-            )
+            legacy_dist = legacy_df.groupBy(col_name).count().orderBy(col_name).collect()
+            lakehouse_dist = lakehouse_df.groupBy(col_name).count().orderBy(col_name).collect()
 
             legacy_dict = {str(row[col_name]): row["count"] for row in legacy_dist}
             lakehouse_dict = {str(row[col_name]): row["count"] for row in lakehouse_dist}
@@ -117,15 +122,16 @@ class MigrationReconciler:
                 passed=passed,
                 legacy_value=legacy_dict,
                 lakehouse_value=lakehouse_dict,
-                details=f"Mismatches: {mismatches}" if mismatches else "Distributions match"
+                details=f"Mismatches: {mismatches}" if mismatches else "Distributions match",
             )
             results.append(result)
             self.results.append(result)
 
         return results
 
-    def compare_schemas(self, legacy_df: DataFrame, lakehouse_df: DataFrame,
-                        table_name: str) -> ReconciliationResult:
+    def compare_schemas(
+        self, legacy_df: DataFrame, lakehouse_df: DataFrame, table_name: str
+    ) -> ReconciliationResult:
         """Check 4: Schema compatibility."""
         legacy_cols = set(legacy_df.columns)
         lakehouse_cols = set(lakehouse_df.columns)
@@ -143,7 +149,7 @@ class MigrationReconciler:
             passed=len(missing) == 0,
             legacy_value=sorted(legacy_cols),
             lakehouse_value=sorted(lakehouse_cols_filtered),
-            details=f"Missing in lakehouse: {missing} | Extra in lakehouse: {extra}"
+            details=f"Missing in lakehouse: {missing} | Extra in lakehouse: {extra}",
         )
         self.results.append(result)
         return result

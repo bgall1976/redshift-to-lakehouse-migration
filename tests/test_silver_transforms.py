@@ -5,10 +5,10 @@ Tests that PySpark transformations produce identical results to the
 legacy dbt staging models they replace.
 """
 
-import pytest
 from pyspark.sql import functions as F
-from lakehouse_pipelines.silver.clean_policies import transform_policies
+
 from lakehouse_pipelines.silver.clean_claims import transform_claims
+from lakehouse_pipelines.silver.clean_policies import transform_policies
 
 
 class TestCleanPolicies:
@@ -53,6 +53,7 @@ class TestCleanPolicies:
     def test_dates_are_cast_to_date_type(self, sample_policies):
         """Date fields should be cast from string to DateType."""
         from pyspark.sql.types import DateType
+
         result = transform_policies(sample_policies)
         assert result.schema["effective_date"].dataType == DateType()
         assert result.schema["expiration_date"].dataType == DateType()
@@ -60,6 +61,7 @@ class TestCleanPolicies:
     def test_premium_is_cast_to_decimal(self, sample_policies):
         """Annual premium should be cast to DecimalType(12,2)."""
         from pyspark.sql.types import DecimalType
+
         result = transform_policies(sample_policies)
         assert result.schema["annual_premium"].dataType == DecimalType(12, 2)
 

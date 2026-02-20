@@ -5,13 +5,12 @@ Provides schema contract enforcement between Bronze and Silver layers,
 replacing the implicit schema guarantees that Redshift provided.
 """
 
+from loguru import logger
 from pyspark.sql import DataFrame
 from pyspark.sql.types import StructType
-from loguru import logger
 
 
-def validate_schema(df: DataFrame, expected_schema: StructType,
-                    strict: bool = False) -> dict:
+def validate_schema(df: DataFrame, expected_schema: StructType, strict: bool = False) -> dict:
     """Validate a DataFrame's schema against an expected schema.
 
     Args:
@@ -58,8 +57,9 @@ def validate_schema(df: DataFrame, expected_schema: StructType,
     return result
 
 
-def compare_schemas(schema_a: StructType, schema_b: StructType,
-                    label_a: str = "Source", label_b: str = "Target") -> dict:
+def compare_schemas(
+    schema_a: StructType, schema_b: StructType, label_a: str = "Source", label_b: str = "Target"
+) -> dict:
     """Compare two schemas and report differences.
 
     Useful during migration to compare Redshift schema vs. lakehouse schema.

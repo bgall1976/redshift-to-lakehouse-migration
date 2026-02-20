@@ -6,36 +6,32 @@ Sources: fintech_catalog.silver.cleaned_policies, cleaned_premiums
 Target: fintech_catalog.gold.dim_policy
 """
 
-from pyspark.sql import SparkSession, DataFrame
+from loguru import logger
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import DecimalType
-from loguru import logger
 
 
-def generate_surrogate_key(df: DataFrame, key_columns: list[str],
-                           output_col: str = "surrogate_key") -> DataFrame:
+def generate_surrogate_key(
+    df: DataFrame, key_columns: list[str], output_col: str = "surrogate_key"
+) -> DataFrame:
     """Replaces dbt generate_surrogate_key macro."""
-    concat_expr = F.concat_ws("|", *[
-        F.coalesce(F.col(c).cast("string"), F.lit("_null_"))
-        for c in key_columns
-    ])
+    concat_expr = F.concat_ws(
+        "|", *[F.coalesce(F.col(c).cast("string"), F.lit("_null_")) for c in key_columns]
+    )
     return df.withColumn(output_col, F.md5(concat_expr))
 
 
 def build_premium_summary(df_premiums: DataFrame) -> DataFrame:
     """Migrated from: int_premium_summary.sql"""
-    return (
-        df_premiums
-        .groupBy("policy_id")
-        .agg(
-            F.count("*").alias("total_premium_payments"),
-            F.sum(
-                F.when(F.col("payment_status") == "COMPLETED", F.col("amount")).otherwise(0)
-            ).cast(DecimalType(12, 2)).alias("total_premium_collected"),
-            F.sum(
-                F.when(F.col("payment_date") > F.col("due_date"), F.lit(1)).otherwise(0)
-            ).cast("int").alias("late_premium_payments"),
-        )
+    return df_premiums.groupBy("policy_id").agg(
+        F.count("*").alias("total_premium_payments"),
+        F.sum(F.when(F.col("payment_status") == "COMPLETED", F.col("amount")).otherwise(0))
+        .cast(DecimalType(12, 2))
+        .alias("total_premium_collected"),
+        F.sum(F.when(F.col("payment_date") > F.col("due_date"), F.lit(1)).otherwise(0))
+        .cast("int")
+        .alias("late_premium_payments"),
     )
 
 
@@ -60,21 +56,30 @@ def build_dim_policy(df_policies: DataFrame, df_premium_summary: DataFrame) -> D
             F.col("p.coverage_limit"),
             F.col("p.agent_id"),
             F.col("p.channel"),
-            F.coalesce(F.col("ps.total_premium_payments"), F.lit(0)).alias("total_premium_payments"),
-            F.coalesce(F.col("ps.total_premium_collected"), F.lit(0)).alias("total_premium_collected"),
+            F.coalesce(F.col("ps.total_premium_payments"), F.lit(0)).alias(
+                "total_premium_payments"
+            ),
+            F.coalesce(F.col("ps.total_premium_collected"), F.lit(0)).alias(
+                "total_premium_collected"
+            ),
             F.coalesce(F.col("ps.late_premium_payments"), F.lit(0)).alias("late_premium_payments"),
             # Derived: policy_term_days
-            F.datediff(F.col("p.expiration_date"), F.col("p.effective_date")).alias("policy_term_days"),
+            F.datediff(F.col("p.expiration_date"), F.col("p.effective_date")).alias(
+                "policy_term_days"
+            ),
             # Derived: policy_status_category
             F.when(
                 (F.col("p.status") == "ACTIVE") & (F.col("p.expiration_date") >= F.current_date()),
-                F.lit("IN FORCE")
-            ).when(
+                F.lit("IN FORCE"),
+            )
+            .when(
                 (F.col("p.status") == "ACTIVE") & (F.col("p.expiration_date") < F.current_date()),
-                F.lit("EXPIRED")
-            ).when(F.col("p.status") == "CANCELLED", F.lit("CANCELLED"))
+                F.lit("EXPIRED"),
+            )
+            .when(F.col("p.status") == "CANCELLED", F.lit("CANCELLED"))
             .when(F.col("p.status") == "PENDING", F.lit("PENDING"))
-            .otherwise(F.lit("UNKNOWN")).alias("policy_status_category"),
+            .otherwise(F.lit("UNKNOWN"))
+            .alias("policy_status_category"),
             # SCD Type 2 fields
             F.col("p.updated_at").alias("effective_start_date"),
             F.lit(None).cast("timestamp").alias("effective_end_date"),
@@ -110,19 +115,22 @@ def merge_scd2(spark: SparkSession, target_table: str, source_df: DataFrame) -> 
 
     # Tracked columns that trigger a new version
     tracked_cols = [
-        "status", "annual_premium", "deductible", "coverage_limit",
-        "agent_id", "channel", "coverage_type_code"
+        "status",
+        "annual_premium",
+        "deductible",
+        "coverage_limit",
+        "agent_id",
+        "channel",
+        "coverage_type_code",
     ]
 
-    change_condition = " OR ".join([
-        f"target.{c} != source.{c}" for c in tracked_cols
-    ])
+    change_condition = " OR ".join([f"target.{c} != source.{c}" for c in tracked_cols])
 
     (
         target.alias("target")
         .merge(
             source_df.alias("source"),
-            "target.policy_id = source.policy_id AND target.is_current = TRUE"
+            "target.policy_id = source.policy_id AND target.is_current = TRUE",
         )
         # Close existing record if attributes changed
         .whenMatchedUpdate(
@@ -130,7 +138,7 @@ def merge_scd2(spark: SparkSession, target_table: str, source_df: DataFrame) -> 
             set={
                 "is_current": F.lit(False),
                 "effective_end_date": F.col("source.effective_start_date"),
-            }
+            },
         )
         # Insert new records
         .whenNotMatchedInsertAll()
@@ -140,10 +148,12 @@ def merge_scd2(spark: SparkSession, target_table: str, source_df: DataFrame) -> 
     logger.info(f"SCD Type 2 merge complete for {target_table}")
 
 
-def run(spark: SparkSession,
-        policies_table: str = "fintech_catalog.silver.cleaned_policies",
-        premiums_table: str = "fintech_catalog.silver.cleaned_premiums",
-        target_table: str = "fintech_catalog.gold.dim_policy") -> int:
+def run(
+    spark: SparkSession,
+    policies_table: str = "fintech_catalog.silver.cleaned_policies",
+    premiums_table: str = "fintech_catalog.silver.cleaned_premiums",
+    target_table: str = "fintech_catalog.gold.dim_policy",
+) -> int:
     """Execute Gold layer dim_policy pipeline."""
 
     logger.info("Building dim_policy...")

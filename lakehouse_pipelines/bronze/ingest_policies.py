@@ -9,42 +9,48 @@ Legacy equivalent: COPY raw.policies FROM 's3://...' CSV
 Target table: fintech_catalog.bronze.raw_policies
 """
 
-from pyspark.sql import SparkSession, DataFrame
+import argparse
+
+from loguru import logger
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
-    StructType, StructField, StringType, DoubleType, IntegerType, TimestampType
+    DoubleType,
+    StringType,
+    StructField,
+    StructType,
 )
-import argparse
-from loguru import logger
-
 
 # ──────────────────────────────────────────────────────────────────────
 # Schema definition (enforce on read for Bronze)
 # ──────────────────────────────────────────────────────────────────────
 
-RAW_POLICIES_SCHEMA = StructType([
-    StructField("policy_id", StringType(), False),
-    StructField("policyholder_first_name", StringType(), True),
-    StructField("policyholder_last_name", StringType(), True),
-    StructField("policyholder_email", StringType(), True),
-    StructField("property_id", StringType(), True),
-    StructField("coverage_type_code", StringType(), True),
-    StructField("effective_date", StringType(), True),
-    StructField("expiration_date", StringType(), True),
-    StructField("status", StringType(), True),
-    StructField("annual_premium", DoubleType(), True),
-    StructField("deductible", DoubleType(), True),
-    StructField("coverage_limit", DoubleType(), True),
-    StructField("agent_id", StringType(), True),
-    StructField("channel", StringType(), True),
-    StructField("created_at", StringType(), True),
-    StructField("updated_at", StringType(), True),
-])
+RAW_POLICIES_SCHEMA = StructType(
+    [
+        StructField("policy_id", StringType(), False),
+        StructField("policyholder_first_name", StringType(), True),
+        StructField("policyholder_last_name", StringType(), True),
+        StructField("policyholder_email", StringType(), True),
+        StructField("property_id", StringType(), True),
+        StructField("coverage_type_code", StringType(), True),
+        StructField("effective_date", StringType(), True),
+        StructField("expiration_date", StringType(), True),
+        StructField("status", StringType(), True),
+        StructField("annual_premium", DoubleType(), True),
+        StructField("deductible", DoubleType(), True),
+        StructField("coverage_limit", DoubleType(), True),
+        StructField("agent_id", StringType(), True),
+        StructField("channel", StringType(), True),
+        StructField("created_at", StringType(), True),
+        StructField("updated_at", StringType(), True),
+    ]
+)
 
 
 # ──────────────────────────────────────────────────────────────────────
 # Ingestion functions
 # ──────────────────────────────────────────────────────────────────────
+
 
 def add_metadata_columns(df: DataFrame, source_path: str) -> DataFrame:
     """Add Bronze layer metadata columns for lineage tracking.
@@ -53,8 +59,7 @@ def add_metadata_columns(df: DataFrame, source_path: str) -> DataFrame:
     (load timestamps, source file tracking) with explicit, queryable fields.
     """
     return (
-        df
-        .withColumn("_ingestion_timestamp", F.current_timestamp())
+        df.withColumn("_ingestion_timestamp", F.current_timestamp())
         .withColumn("_source_file", F.lit(source_path))
         .withColumn("_batch_id", F.lit(F.current_timestamp().cast("long")))
     )
@@ -69,8 +74,7 @@ def ingest_batch(spark: SparkSession, source_path: str, target_table: str) -> in
     logger.info(f"Reading source file: {source_path}")
 
     df_raw = (
-        spark.read
-        .option("header", "true")
+        spark.read.option("header", "true")
         .option("inferSchema", "false")
         .schema(RAW_POLICIES_SCHEMA)
         .csv(source_path)
@@ -83,8 +87,7 @@ def ingest_batch(spark: SparkSession, source_path: str, target_table: str) -> in
 
     logger.info(f"Writing to Bronze table: {target_table}")
     (
-        df_bronze.write
-        .format("delta")
+        df_bronze.write.format("delta")
         .mode("append")
         .option("mergeSchema", "true")
         .saveAsTable(target_table)
@@ -94,8 +97,9 @@ def ingest_batch(spark: SparkSession, source_path: str, target_table: str) -> in
     return row_count
 
 
-def ingest_autoloader(spark: SparkSession, source_path: str, target_table: str,
-                      checkpoint_path: str) -> None:
+def ingest_autoloader(
+    spark: SparkSession, source_path: str, target_table: str, checkpoint_path: str
+) -> None:
     """Production incremental ingestion using Databricks Auto Loader.
 
     Auto Loader automatically detects new files in the source directory
@@ -105,8 +109,7 @@ def ingest_autoloader(spark: SparkSession, source_path: str, target_table: str,
     logger.info(f"Starting Auto Loader ingestion from: {source_path}")
 
     (
-        spark.readStream
-        .format("cloudFiles")
+        spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "csv")
         .option("cloudFiles.schemaLocation", checkpoint_path + "/schema")
         .option("cloudFiles.schemaEvolutionMode", "addNewColumns")
@@ -116,8 +119,7 @@ def ingest_autoloader(spark: SparkSession, source_path: str, target_table: str,
         .withColumn("_ingestion_timestamp", F.current_timestamp())
         .withColumn("_source_file", F.input_file_name())
         .withColumn("_batch_id", F.lit(F.current_timestamp().cast("long")))
-        .writeStream
-        .format("delta")
+        .writeStream.format("delta")
         .outputMode("append")
         .option("checkpointLocation", checkpoint_path)
         .option("mergeSchema", "true")
@@ -132,22 +134,30 @@ def ingest_autoloader(spark: SparkSession, source_path: str, target_table: str,
 # Entry point
 # ──────────────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(description="Bronze layer: Ingest raw policies")
     parser.add_argument("--source", required=True, help="Path to source CSV file or S3 directory")
-    parser.add_argument("--target", default="fintech_catalog.bronze.raw_policies",
-                        help="Target Delta table name")
-    parser.add_argument("--mode", choices=["batch", "autoloader"], default="batch",
-                        help="Ingestion mode")
-    parser.add_argument("--checkpoint", default="/tmp/checkpoints/bronze_policies",
-                        help="Checkpoint path for Auto Loader")
+    parser.add_argument(
+        "--target", default="fintech_catalog.bronze.raw_policies", help="Target Delta table name"
+    )
+    parser.add_argument(
+        "--mode", choices=["batch", "autoloader"], default="batch", help="Ingestion mode"
+    )
+    parser.add_argument(
+        "--checkpoint",
+        default="/tmp/checkpoints/bronze_policies",
+        help="Checkpoint path for Auto Loader",
+    )
     args = parser.parse_args()
 
     spark = (
-        SparkSession.builder
-        .appName("bronze_ingest_policies")
+        SparkSession.builder.appName("bronze_ingest_policies")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalogExtension")
+        .config(
+            "spark.sql.catalog.spark_catalog",
+            "org.apache.spark.sql.delta.catalog.DeltaCatalogExtension",
+        )
         .getOrCreate()
     )
 

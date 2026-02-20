@@ -6,18 +6,16 @@ Source: fintech_catalog.bronze.raw_properties
 Target: fintech_catalog.silver.cleaned_properties
 """
 
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql import functions as F
-from pyspark.sql.types import DateType, DecimalType, IntegerType, TimestampType
 from loguru import logger
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import functions as F
+from pyspark.sql.types import DecimalType, IntegerType, TimestampType
 
 
 def transform_properties(df_bronze: DataFrame) -> DataFrame:
     """Mirrors stg_properties.sql transformation logic."""
     return (
-        df_bronze
-        .filter(F.col("property_id").isNotNull())
-
+        df_bronze.filter(F.col("property_id").isNotNull())
         .withColumn("street_address", F.trim(F.col("street_address")))
         .withColumn("city", F.trim(F.col("city")))
         .withColumn("state", F.upper(F.trim(F.col("state"))))
@@ -40,9 +38,11 @@ def transform_properties(df_bronze: DataFrame) -> DataFrame:
     )
 
 
-def run(spark: SparkSession,
-        source_table: str = "fintech_catalog.bronze.raw_properties",
-        target_table: str = "fintech_catalog.silver.cleaned_properties") -> int:
+def run(
+    spark: SparkSession,
+    source_table: str = "fintech_catalog.bronze.raw_properties",
+    target_table: str = "fintech_catalog.silver.cleaned_properties",
+) -> int:
 
     logger.info(f"Reading from Bronze: {source_table}")
     df_bronze = spark.read.table(source_table)
@@ -51,8 +51,7 @@ def run(spark: SparkSession,
     silver_count = df_silver.count()
 
     (
-        df_silver.write
-        .format("delta")
+        df_silver.write.format("delta")
         .mode("overwrite")
         .option("overwriteSchema", "true")
         .saveAsTable(target_table)

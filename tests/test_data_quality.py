@@ -5,18 +5,15 @@ Validates that DQ checks correctly identify issues, replacing
 dbt's built-in test framework.
 """
 
-import pytest
-from pyspark.sql import functions as F
 from lakehouse_pipelines.silver.utils.data_quality_checks import (
-    check_not_null,
-    check_unique,
     check_accepted_values,
+    check_not_null,
     check_relationships,
+    check_unique,
 )
 
 
 class TestNotNullCheck:
-
     def test_passes_when_no_nulls(self, spark):
         df = spark.createDataFrame([(1,), (2,), (3,)], ["id"])
         result = check_not_null(df, "id")
@@ -31,7 +28,6 @@ class TestNotNullCheck:
 
 
 class TestUniqueCheck:
-
     def test_passes_when_all_unique(self, spark):
         df = spark.createDataFrame([(1,), (2,), (3,)], ["id"])
         result = check_unique(df, "id")
@@ -45,7 +41,6 @@ class TestUniqueCheck:
 
 
 class TestAcceptedValuesCheck:
-
     def test_passes_when_all_valid(self, spark):
         df = spark.createDataFrame([("A",), ("B",), ("C",)], ["status"])
         result = check_accepted_values(df, "status", ["A", "B", "C"])
@@ -60,7 +55,6 @@ class TestAcceptedValuesCheck:
 
 
 class TestRelationshipsCheck:
-
     def test_passes_with_valid_references(self, spark):
         df = spark.createDataFrame([("POL-1",), ("POL-2",)], ["policy_id"])
         ref = spark.createDataFrame([("POL-1",), ("POL-2",), ("POL-3",)], ["policy_id"])

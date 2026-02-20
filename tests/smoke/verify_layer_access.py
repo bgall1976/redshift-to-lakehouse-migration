@@ -12,9 +12,10 @@ Usage (via Databricks job):
 """
 
 import sys
+
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 
 
 def verify_layer(spark: SparkSession, layer: str, catalog: str = "fintech_catalog_dev"):
@@ -37,19 +38,18 @@ def verify_layer(spark: SparkSession, layer: str, catalog: str = "fintech_catalo
     # 2. Verify write access
     print(f"  Testing write access: {test_table}")
     try:
-        test_schema = StructType([
-            StructField("test_id", StringType(), False),
-            StructField("test_value", IntegerType(), True),
-            StructField("test_timestamp", StringType(), True),
-        ])
-        test_data = [("smoke_test_1", 42, F.current_timestamp())]
-
-        df = spark.createDataFrame(
-            [("smoke_test_1", 42, "2024-01-01T00:00:00")],
-            test_schema
+        test_schema = StructType(
+            [
+                StructField("test_id", StringType(), False),
+                StructField("test_value", IntegerType(), True),
+                StructField("test_timestamp", StringType(), True),
+            ]
         )
+        [("smoke_test_1", 42, F.current_timestamp())]
+
+        df = spark.createDataFrame([("smoke_test_1", 42, "2024-01-01T00:00:00")], test_schema)
         df.write.format("delta").mode("overwrite").saveAsTable(test_table)
-        print(f"  PASS: Write access verified")
+        print("  PASS: Write access verified")
     except Exception as e:
         print(f"  FAIL: Cannot write to {test_table}: {e}")
         sys.exit(1)
@@ -80,9 +80,9 @@ def verify_layer(spark: SparkSession, layer: str, catalog: str = "fintech_catalo
             if not table.tableName.startswith("_"):
                 print(f"    - {table.tableName}")
         if not tables:
-            print(f"    (no tables yet)")
+            print("    (no tables yet)")
     except Exception:
-        print(f"    (unable to list tables)")
+        print("    (unable to list tables)")
 
     print(f"=== {layer} layer: ALL CHECKS PASSED ===\n")
 

@@ -81,7 +81,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "bronze" {
 
     # GLBA retention: keep for 7 years minimum
     expiration {
-      days = 2555  # ~7 years
+      days = 2555 # ~7 years
     }
   }
 }

@@ -9,18 +9,17 @@ This module translates the dbt staging model into PySpark, preserving
 identical business logic while adding enhanced validation and metadata.
 """
 
-from pyspark.sql import SparkSession, DataFrame
+from loguru import logger
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import DateType, DecimalType, TimestampType
-from loguru import logger
 
 from lakehouse_pipelines.silver.utils.data_quality_checks import (
+    check_accepted_values,
     check_not_null,
     check_unique,
-    check_accepted_values,
     log_quality_results,
 )
-
 
 # ──────────────────────────────────────────────────────────────────────
 # Transformation logic (mirrors dbt stg_policies.sql)
@@ -44,18 +43,20 @@ def transform_policies(df_bronze: DataFrame) -> DataFrame:
         # Filter: equivalent to WHERE clause in dbt
         .filter(F.col("policy_id").isNotNull())
         .filter(F.col("effective_date").isNotNull())
-
         # String cleaning: TRIM
         .withColumn("policyholder_first_name", F.trim(F.col("policyholder_first_name")))
         .withColumn("policyholder_last_name", F.trim(F.col("policyholder_last_name")))
-        .withColumn("policyholder_full_name",
-                    F.concat_ws(" ",
-                                F.trim(F.col("policyholder_first_name")),
-                                F.trim(F.col("policyholder_last_name"))))
+        .withColumn(
+            "policyholder_full_name",
+            F.concat_ws(
+                " ",
+                F.trim(F.col("policyholder_first_name")),
+                F.trim(F.col("policyholder_last_name")),
+            ),
+        )
         .withColumn("policyholder_email", F.trim(F.col("policyholder_email")))
         .withColumn("agent_id", F.trim(F.col("agent_id")))
         .withColumn("channel", F.trim(F.col("channel")))
-
         # Type casting: CAST
         .withColumn("effective_date", F.col("effective_date").cast(DateType()))
         .withColumn("expiration_date", F.col("expiration_date").cast(DateType()))
@@ -64,11 +65,9 @@ def transform_policies(df_bronze: DataFrame) -> DataFrame:
         .withColumn("coverage_limit", F.col("coverage_limit").cast(DecimalType(14, 2)))
         .withColumn("created_at", F.col("created_at").cast(TimestampType()))
         .withColumn("updated_at", F.col("updated_at").cast(TimestampType()))
-
         # Standardization: UPPER
         .withColumn("status", F.upper(F.trim(F.col("status"))))
         .withColumn("coverage_type_code", F.upper(F.trim(F.col("coverage_type_code"))))
-
         # Silver metadata
         .withColumn("_cleaned_timestamp", F.current_timestamp())
     )
@@ -79,6 +78,7 @@ def transform_policies(df_bronze: DataFrame) -> DataFrame:
 # ──────────────────────────────────────────────────────────────────────
 # Data quality checks (replaces dbt tests)
 # ──────────────────────────────────────────────────────────────────────
+
 
 def validate_policies(df: DataFrame) -> dict:
     """Run data quality checks equivalent to dbt schema tests.
@@ -102,9 +102,12 @@ def validate_policies(df: DataFrame) -> dict:
 # Pipeline execution
 # ──────────────────────────────────────────────────────────────────────
 
-def run(spark: SparkSession,
-        source_table: str = "fintech_catalog.bronze.raw_policies",
-        target_table: str = "fintech_catalog.silver.cleaned_policies") -> int:
+
+def run(
+    spark: SparkSession,
+    source_table: str = "fintech_catalog.bronze.raw_policies",
+    target_table: str = "fintech_catalog.silver.cleaned_policies",
+) -> int:
     """Execute the Silver layer policy cleaning pipeline."""
 
     logger.info(f"Reading from Bronze: {source_table}")
@@ -126,12 +129,13 @@ def run(spark: SparkSession,
         # For now, log and continue
 
     silver_count = df_silver.count()
-    logger.info(f"Silver row count: {silver_count:,} (dropped {bronze_count - silver_count:,} invalid rows)")
+    logger.info(
+        f"Silver row count: {silver_count:,} (dropped {bronze_count - silver_count:,} invalid rows)"
+    )
 
     logger.info(f"Writing to Silver: {target_table}")
     (
-        df_silver.write
-        .format("delta")
+        df_silver.write.format("delta")
         .mode("overwrite")
         .option("overwriteSchema", "true")
         .saveAsTable(target_table)

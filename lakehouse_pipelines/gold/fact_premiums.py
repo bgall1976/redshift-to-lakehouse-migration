@@ -6,9 +6,9 @@ Sources: silver.cleaned_premiums, silver.cleaned_policies
 Target: fintech_catalog.gold.fact_premiums
 """
 
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql import functions as F
 from loguru import logger
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import functions as F
 
 
 def build_fact_premiums(df_premiums: DataFrame, df_policies: DataFrame) -> DataFrame:
@@ -21,7 +21,7 @@ def build_fact_premiums(df_premiums: DataFrame, df_policies: DataFrame) -> DataF
                 "policy_id", "property_id", "coverage_type_code", "agent_id", "channel"
             ).alias("p"),
             F.col("pr.policy_id") == F.col("p.policy_id"),
-            "left"
+            "left",
         )
         .select(
             F.col("pr.premium_id"),
@@ -39,9 +39,11 @@ def build_fact_premiums(df_premiums: DataFrame, df_policies: DataFrame) -> DataF
             F.col("p.channel"),
             F.col("pr.amount").alias("premium_amount"),
             F.when(F.col("pr.payment_status") == "COMPLETED", F.col("pr.amount"))
-             .otherwise(0).alias("collected_amount"),
+            .otherwise(0)
+            .alias("collected_amount"),
             F.when(F.col("pr.payment_status") == "FAILED", F.col("pr.amount"))
-             .otherwise(0).alias("failed_amount"),
+            .otherwise(0)
+            .alias("failed_amount"),
             F.datediff(F.col("pr.payment_date"), F.col("pr.due_date")).alias("days_from_due"),
             (F.col("pr.payment_date") > F.col("pr.due_date")).alias("is_late_payment"),
             (F.col("pr.payment_status") == "COMPLETED").alias("is_collected"),
@@ -50,10 +52,12 @@ def build_fact_premiums(df_premiums: DataFrame, df_policies: DataFrame) -> DataF
     )
 
 
-def run(spark: SparkSession,
-        premiums_table: str = "fintech_catalog.silver.cleaned_premiums",
-        policies_table: str = "fintech_catalog.silver.cleaned_policies",
-        target_table: str = "fintech_catalog.gold.fact_premiums") -> int:
+def run(
+    spark: SparkSession,
+    premiums_table: str = "fintech_catalog.silver.cleaned_premiums",
+    policies_table: str = "fintech_catalog.silver.cleaned_policies",
+    target_table: str = "fintech_catalog.gold.fact_premiums",
+) -> int:
 
     logger.info("Building fact_premiums...")
     df_premiums = spark.read.table(premiums_table)

@@ -10,14 +10,14 @@ Combines the logic from:
   - fact_claims.sql (final mart)
 """
 
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql import functions as F
-from pyspark.sql.types import DecimalType
 from loguru import logger
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import functions as F
 
 
-def build_fact_claims(df_claims: DataFrame, df_policies: DataFrame,
-                      df_properties: DataFrame) -> DataFrame:
+def build_fact_claims(
+    df_claims: DataFrame, df_policies: DataFrame, df_properties: DataFrame
+) -> DataFrame:
     """Build the claims fact table.
 
     Merges the intermediate int_policy_claims join with the final
@@ -27,15 +27,9 @@ def build_fact_claims(df_claims: DataFrame, df_policies: DataFrame,
     # Step 1: Join claims to policies (replaces int_policy_claims.sql)
     df_enriched = (
         df_claims.alias("c")
+        .join(df_policies.alias("p"), F.col("c.policy_id") == F.col("p.policy_id"), "inner")
         .join(
-            df_policies.alias("p"),
-            F.col("c.policy_id") == F.col("p.policy_id"),
-            "inner"
-        )
-        .join(
-            df_properties.alias("prop"),
-            F.col("p.property_id") == F.col("prop.property_id"),
-            "left"
+            df_properties.alias("prop"), F.col("p.property_id") == F.col("prop.property_id"), "left"
         )
     )
 
@@ -49,36 +43,32 @@ def build_fact_claims(df_claims: DataFrame, df_policies: DataFrame,
         F.col("c.claim_date").alias("claim_date_key"),
         F.col("c.reported_date").alias("reported_date_key"),
         F.col("c.closed_date").alias("closed_date_key"),
-
         # Claim attributes
         F.col("c.claim_type"),
         F.col("c.claim_status"),
         F.col("c.cause_of_loss"),
         F.col("c.adjuster_id"),
-
         # Measures
         F.col("c.claim_amount"),
         F.col("c.approved_amount"),
         F.col("c.deductible_applied"),
         F.least(F.col("c.claim_amount"), F.col("p.coverage_limit")).alias("capped_claim_amount"),
         (F.col("c.approved_amount") - F.col("c.deductible_applied")).alias("net_claim_payout"),
-
         # Policy context
         F.col("p.annual_premium"),
         F.col("p.deductible").alias("policy_deductible"),
         F.col("p.coverage_limit"),
-        (F.col("c.claim_amount") / F.when(F.col("p.annual_premium") == 0, None)
-         .otherwise(F.col("p.annual_premium"))).alias("claim_to_premium_ratio"),
-
+        (
+            F.col("c.claim_amount")
+            / F.when(F.col("p.annual_premium") == 0, None).otherwise(F.col("p.annual_premium"))
+        ).alias("claim_to_premium_ratio"),
         # Timing measures
         F.datediff(F.col("c.reported_date"), F.col("c.claim_date")).alias("days_to_report"),
         F.datediff(F.col("c.closed_date"), F.col("c.reported_date")).alias("days_to_close"),
-
         # Property risk context
         F.col("prop.state").alias("property_state"),
         F.col("prop.flood_zone"),
         F.col("prop.wind_zone"),
-
         # Derived flags
         (F.col("c.claim_amount") > F.col("p.coverage_limit")).alias("exceeds_coverage_limit"),
         (F.datediff(F.col("c.reported_date"), F.col("c.claim_date")) > 30).alias("late_reported"),
@@ -89,11 +79,13 @@ def build_fact_claims(df_claims: DataFrame, df_policies: DataFrame,
     return df_fact
 
 
-def run(spark: SparkSession,
-        claims_table: str = "fintech_catalog.silver.cleaned_claims",
-        policies_table: str = "fintech_catalog.silver.cleaned_policies",
-        properties_table: str = "fintech_catalog.silver.cleaned_properties",
-        target_table: str = "fintech_catalog.gold.fact_claims") -> int:
+def run(
+    spark: SparkSession,
+    claims_table: str = "fintech_catalog.silver.cleaned_claims",
+    policies_table: str = "fintech_catalog.silver.cleaned_policies",
+    properties_table: str = "fintech_catalog.silver.cleaned_properties",
+    target_table: str = "fintech_catalog.gold.fact_claims",
+) -> int:
 
     logger.info("Building fact_claims...")
 
@@ -105,8 +97,7 @@ def run(spark: SparkSession,
     row_count = df_fact.count()
 
     (
-        df_fact.write
-        .format("delta")
+        df_fact.write.format("delta")
         .mode("overwrite")
         .partitionBy("property_state")
         .saveAsTable(target_table)
