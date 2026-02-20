@@ -46,3 +46,6 @@ Thumbs.db
 .env
 *.pem
 *.key
+
+# Temp files
+tmp_*.json

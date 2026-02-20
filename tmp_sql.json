@@ -1,5 +1,0 @@
-{
-    "wait_timeout":  "50s",
-    "warehouse_id":  "73ad925d734eb761",
-    "statement":  "SHOW SCHEMAS IN fintech_catalog_dev"
-}

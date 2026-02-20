@@ -14,16 +14,28 @@ print(f"Testing {layer} layer in {catalog}")
 
 # COMMAND ----------
 
+import time
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 schema_name = f"{catalog}.{layer}"
 test_table = f"{schema_name}._smoke_test"
 
-# 1. Verify schema access
+# 1. Verify schema access (with retries for UC connectivity)
 print(f"Checking schema access: {schema_name}")
-spark.sql(f"USE CATALOG {catalog}")
-spark.sql(f"USE SCHEMA {layer}")
-print(f"  PASS: Schema accessible")
+for attempt in range(5):
+    try:
+        if attempt > 0:
+            wait = 10 * attempt
+            print(f"  Retry {attempt}/4, waiting {wait}s...")
+            time.sleep(wait)
+        spark.sql(f"USE CATALOG {catalog}")
+        spark.sql(f"USE SCHEMA {layer}")
+        print(f"  PASS: Schema accessible")
+        break
+    except Exception as e:
+        if attempt == 4:
+            raise
+        print(f"  Attempt {attempt+1} failed: {str(e)[:100]}")
 
 # COMMAND ----------
 
