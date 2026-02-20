@@ -102,6 +102,7 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_warehouse_id: ${{ secrets.BUNDLE_VAR_warehouse_id }}
 
       - name: Deploy Databricks Bundle
         run: |
@@ -109,6 +110,7 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_warehouse_id: ${{ secrets.BUNDLE_VAR_warehouse_id }}
 
       - name: Verify Deployment
         run: |
@@ -117,6 +119,7 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_warehouse_id: ${{ secrets.BUNDLE_VAR_warehouse_id }}
 
   # ──────────────────────────────────────────────────────────
   # Job 3: Run Data Quality Smoke Test (dev/staging only)
@@ -140,6 +143,7 @@ jobs:
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          BUNDLE_VAR_warehouse_id: ${{ secrets.BUNDLE_VAR_warehouse_id }}
 
   # ──────────────────────────────────────────────────────────
   # Job 4: Notify on completion
