@@ -1,0 +1,356 @@
+# ============================================================
+# Databricks Asset Bundle Configuration
+# ============================================================
+# Defines all Databricks resources (jobs, pipelines, clusters)
+# as code. Deployed via `databricks bundle deploy -t <target>`.
+#
+# This replaces manual Databricks UI configuration and enables
+# reproducible, version-controlled pipeline deployments.
+#
+# Docs: https://docs.databricks.com/en/dev-tools/bundles/
+# ============================================================
+
+bundle:
+  name: fintech-lakehouse-migration
+
+# ────────────────────────────────────────────────────────────
+# Variables (overridden per target/environment)
+# ────────────────────────────────────────────────────────────
+variables:
+  catalog:
+    description: Unity Catalog name
+    default: fintech_catalog
+  warehouse_id:
+    description: SQL Warehouse ID for DQ queries
+  notification_email:
+    description: Email for job failure alerts
+
+# ────────────────────────────────────────────────────────────
+# Workspace file sync
+# ────────────────────────────────────────────────────────────
+sync:
+  include:
+    - "lakehouse_pipelines/**"
+    - "migration_validation/**"
+    - "sample_data/*.csv"
+    - "tests/**"
+    - "notebooks/**"
+
+# ────────────────────────────────────────────────────────────
+# Shared cluster configuration
+# ────────────────────────────────────────────────────────────
+resources:
+
+  # ──────────────────────────────────────────────────────────
+  # Job 1: Full Medallion Pipeline (Bronze → Silver → Gold)
+  # ──────────────────────────────────────────────────────────
+  jobs:
+    medallion_pipeline:
+      name: "[${bundle.target}] Fintech Lakehouse - Full Pipeline"
+      description: >
+        End-to-end medallion pipeline: ingests raw data to Bronze,
+        cleans and validates in Silver, builds dimensional models in Gold.
+        Runs daily at 6 AM ET.
+
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"  # Daily at 6 AM
+        timezone_id: America/New_York
+        pause_status: PAUSED  # Enable manually after validation
+
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+
+      tags:
+        project: fintech-lakehouse
+        layer: full-pipeline
+        environment: ${bundle.target}
+
+      tasks:
+        # ── Bronze Layer Tasks ──────────────────────────────
+        - task_key: bronze_ingest_properties
+          description: "Ingest raw property data to Bronze"
+          job_cluster_key: etl_cluster
+          python_wheel_task:
+            package_name: lakehouse_pipelines
+            entry_point: bronze_ingest
+            parameters:
+              - "--source"
+              - "s3://fintechco-datalake-${bundle.target}-bronze/raw/properties/"
+              - "--target"
+              - "${var.catalog}.bronze.raw_properties"
+          libraries:
+            - pypi:
+                package: loguru
+
+        - task_key: bronze_ingest_policies
+          description: "Ingest raw policy data to Bronze"
+          job_cluster_key: etl_cluster
+          python_wheel_task:
+            package_name: lakehouse_pipelines
+            entry_point: bronze_ingest
+            parameters:
+              - "--source"
+              - "s3://fintechco-datalake-${bundle.target}-bronze/raw/policies/"
+              - "--target"
+              - "${var.catalog}.bronze.raw_policies"
+          libraries:
+            - pypi:
+                package: loguru
+
+        - task_key: bronze_ingest_claims
+          description: "Ingest raw claims data to Bronze"
+          job_cluster_key: etl_cluster
+          python_wheel_task:
+            package_name: lakehouse_pipelines
+            entry_point: bronze_ingest
+            parameters:
+              - "--source"
+              - "s3://fintechco-datalake-${bundle.target}-bronze/raw/claims/"
+              - "--target"
+              - "${var.catalog}.bronze.raw_claims"
+          libraries:
+            - pypi:
+                package: loguru
+
+        - task_key: bronze_ingest_premiums
+          description: "Ingest raw premium data to Bronze"
+          job_cluster_key: etl_cluster
+          python_wheel_task:
+            package_name: lakehouse_pipelines
+            entry_point: bronze_ingest
+            parameters:
+              - "--source"
+              - "s3://fintechco-datalake-${bundle.target}-bronze/raw/premiums/"
+              - "--target"
+              - "${var.catalog}.bronze.raw_premiums"
+          libraries:
+            - pypi:
+                package: loguru
+
+        # ── Silver Layer Tasks ──────────────────────────────
+        - task_key: silver_clean_properties
+          description: "Clean and validate property data"
+          depends_on:
+            - task_key: bronze_ingest_properties
+          job_cluster_key: etl_cluster
+          spark_python_task:
+            python_file: lakehouse_pipelines/silver/clean_properties.py
+
+        - task_key: silver_clean_policies
+          description: "Clean and validate policy data"
+          depends_on:
+            - task_key: bronze_ingest_policies
+          job_cluster_key: etl_cluster
+          spark_python_task:
+            python_file: lakehouse_pipelines/silver/clean_policies.py
+
+        - task_key: silver_clean_claims
+          description: "Clean and validate claims data"
+          depends_on:
+            - task_key: bronze_ingest_claims
+          job_cluster_key: etl_cluster
+          spark_python_task:
+            python_file: lakehouse_pipelines/silver/clean_claims.py
+
+        - task_key: silver_clean_premiums
+          description: "Clean and validate premium data"
+          depends_on:
+            - task_key: bronze_ingest_premiums
+          job_cluster_key: etl_cluster
+          spark_python_task:
+            python_file: lakehouse_pipelines/silver/clean_premiums.py
+
+        # ── Gold Layer Tasks ────────────────────────────────
+        - task_key: gold_dim_policy
+          description: "Build policy dimension (SCD Type 2)"
+          depends_on:
+            - task_key: silver_clean_policies
+            - task_key: silver_clean_premiums
+          job_cluster_key: etl_cluster
+          spark_python_task:
+            python_file: lakehouse_pipelines/gold/dim_policy.py
+
+        - task_key: gold_fact_claims
+          description: "Build claims fact table"
+          depends_on:
+            - task_key: silver_clean_claims
+            - task_key: silver_clean_policies
+            - task_key: silver_clean_properties
+          job_cluster_key: etl_cluster
+          spark_python_task:
+            python_file: lakehouse_pipelines/gold/fact_claims.py
+
+        - task_key: gold_fact_premiums
+          description: "Build premiums fact table"
+          depends_on:
+            - task_key: silver_clean_premiums
+            - task_key: silver_clean_policies
+          job_cluster_key: etl_cluster
+          spark_python_task:
+            python_file: lakehouse_pipelines/gold/fact_premiums.py
+
+        # ── Data Quality Gate ───────────────────────────────
+        - task_key: data_quality_validation
+          description: "Run data quality checks on Gold tables"
+          depends_on:
+            - task_key: gold_dim_policy
+            - task_key: gold_fact_claims
+            - task_key: gold_fact_premiums
+          job_cluster_key: etl_cluster
+          notebook_task:
+            notebook_path: notebooks/run_data_quality_checks.py
+            base_parameters:
+              catalog: ${var.catalog}
+              alert_on_failure: "true"
+
+      job_clusters:
+        - job_cluster_key: etl_cluster
+          new_cluster:
+            spark_version: "14.3.x-scala2.12"
+            node_type_id: "i3.xlarge"
+            num_workers: 2
+            data_security_mode: SINGLE_USER
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+            spark_conf:
+              "spark.sql.shuffle.partitions": "auto"
+              "spark.databricks.delta.optimizeWrite.enabled": "true"
+              "spark.databricks.delta.autoCompact.enabled": "true"
+            aws_attributes:
+              first_on_demand: 1              # 1 on-demand driver
+              availability: SPOT_WITH_FALLBACK # Spot workers for cost savings
+              zone_id: auto
+              spot_bid_price_percent: 100
+
+    # ──────────────────────────────────────────────────────────
+    # Job 2: Migration Reconciliation (parallel run validation)
+    # ──────────────────────────────────────────────────────────
+    reconciliation_pipeline:
+      name: "[${bundle.target}] Fintech Lakehouse - Migration Reconciliation"
+      description: >
+        Compares Redshift legacy output with lakehouse output.
+        Run manually during migration validation phase.
+
+      tags:
+        project: fintech-lakehouse
+        layer: validation
+        environment: ${bundle.target}
+
+      tasks:
+        - task_key: run_reconciliation
+          job_cluster_key: validation_cluster
+          spark_python_task:
+            python_file: migration_validation/reconciliation.py
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+
+      job_clusters:
+        - job_cluster_key: validation_cluster
+          new_cluster:
+            spark_version: "14.3.x-scala2.12"
+            node_type_id: "m5.xlarge"
+            num_workers: 1
+            data_security_mode: SINGLE_USER
+            aws_attributes:
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 1
+              ebs_volume_size: 100
+
+    # ──────────────────────────────────────────────────────────
+    # Job 3: Smoke Test (triggered by CD pipeline)
+    # ──────────────────────────────────────────────────────────
+    smoke_test_pipeline:
+      name: "[${bundle.target}] Fintech Lakehouse - Smoke Test"
+      description: >
+        Quick validation that deployed pipelines can read/write
+        to all layers. Triggered automatically after deployment.
+
+      tags:
+        project: fintech-lakehouse
+        layer: smoke-test
+
+      environments:
+        - environment_key: smoke_env
+
+      tasks:
+        - task_key: verify_bronze_access
+          environment_key: smoke_env
+          notebook_task:
+            notebook_path: notebooks/smoke_test.py
+            base_parameters:
+              layer: bronze
+              catalog: ${var.catalog}
+
+        - task_key: verify_silver_access
+          depends_on:
+            - task_key: verify_bronze_access
+          environment_key: smoke_env
+          notebook_task:
+            notebook_path: notebooks/smoke_test.py
+            base_parameters:
+              layer: silver
+              catalog: ${var.catalog}
+
+        - task_key: verify_gold_access
+          depends_on:
+            - task_key: verify_silver_access
+          environment_key: smoke_env
+          notebook_task:
+            notebook_path: notebooks/smoke_test.py
+            base_parameters:
+              layer: gold
+              catalog: ${var.catalog}
+
+# ────────────────────────────────────────────────────────────
+# Environment Targets
+# ────────────────────────────────────────────────────────────
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace: {}
+    variables:
+      catalog: fintech_catalog_dev
+      notification_email: data-eng-dev@fintechco.com
+    resources:
+      jobs:
+        medallion_pipeline:
+          job_clusters:
+            - job_cluster_key: etl_cluster
+              new_cluster:
+                num_workers: 1
+                autoscale:
+                  min_workers: 1
+                  max_workers: 2
+
+  staging:
+    workspace: {}
+    variables:
+      catalog: fintech_catalog_staging
+      notification_email: data-eng-staging@fintechco.com
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Shared/fintech-lakehouse-prod
+    run_as:
+      service_principal_name: fintech-lakehouse-prod-sp
+    variables:
+      catalog: fintech_catalog
+      notification_email: data-eng-alerts@fintechco.com
+    resources:
+      jobs:
+        medallion_pipeline:
+          schedule:
+            pause_status: UNPAUSED  # Only enabled in prod
+          job_clusters:
+            - job_cluster_key: etl_cluster
+              new_cluster:
+                num_workers: 2
+                autoscale:
+                  min_workers: 2
+                  max_workers: 8
+                node_type_id: "i3.2xlarge"  # Larger nodes for prod

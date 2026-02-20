@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.tfvars.example
+
+# dbt
+legacy_dbt_project/target/
+legacy_dbt_project/dbt_packages/
+legacy_dbt_project/logs/
+legacy_dbt_project/profiles.yml
+
+# Databricks
+.databricks/
+*.whl
+
+# Data (keep samples, ignore large generated files)
+sample_data/*.parquet
+sample_data/large_*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.pem
+*.key

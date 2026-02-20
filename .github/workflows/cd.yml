@@ -1,0 +1,160 @@
+# ============================================================
+# CD Pipeline: Deploy to Databricks via Asset Bundles
+# ============================================================
+# Deploys infrastructure via Terraform and pipelines via
+# Databricks Asset Bundles on merge to main.
+#
+# Environment promotion: dev → staging → prod
+# Each environment requires manual approval via GitHub Environments.
+# ============================================================
+
+name: CD - Deploy to Databricks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Job 1: Deploy Infrastructure (Terraform)
+  # ──────────────────────────────────────────────────────────
+  deploy-infrastructure:
+    name: Deploy Infrastructure (${{ github.event.inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    env:
+      TF_VAR_environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=lakehouse-migration/${{ env.TF_VAR_environment }}/terraform.tfstate" \
+            -backend-config="region=us-east-1"
+
+      - name: Terraform Plan
+        run: |
+          cd infrastructure/terraform
+          terraform plan \
+            -var="kms_key_arn=${{ secrets.KMS_KEY_ARN }}" \
+            -var="databricks_account_id=${{ secrets.DATABRICKS_ACCOUNT_ID }}" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd infrastructure/terraform
+          terraform apply -auto-approve tfplan
+
+  # ──────────────────────────────────────────────────────────
+  # Job 2: Deploy Pipelines (Databricks Asset Bundles)
+  # ──────────────────────────────────────────────────────────
+  deploy-pipelines:
+    name: Deploy Pipelines (${{ github.event.inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Validate Databricks Bundle
+        run: |
+          databricks bundle validate -t ${{ github.event.inputs.environment || 'dev' }}
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      - name: Deploy Databricks Bundle
+        run: |
+          databricks bundle deploy -t ${{ github.event.inputs.environment || 'dev' }}
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      - name: Verify Deployment
+        run: |
+          echo "Checking deployed job status..."
+          databricks bundle summary -t ${{ github.event.inputs.environment || 'dev' }}
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+  # ──────────────────────────────────────────────────────────
+  # Job 3: Run Data Quality Smoke Test (dev/staging only)
+  # ──────────────────────────────────────────────────────────
+  smoke-test:
+    name: Data Quality Smoke Test
+    runs-on: ubuntu-latest
+    needs: deploy-pipelines
+    if: github.event.inputs.environment != 'prod'
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+      - name: Trigger smoke test job
+        run: |
+          databricks bundle run smoke_test_pipeline -t ${{ github.event.inputs.environment || 'dev' }}
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+  # ──────────────────────────────────────────────────────────
+  # Job 4: Notify on completion
+  # ──────────────────────────────────────────────────────────
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, deploy-pipelines]
+    if: always()
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Infrastructure:** ${{ needs.deploy-infrastructure.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pipelines:** ${{ needs.deploy-pipelines.result }}" >> $GITHUB_STEP_SUMMARY
