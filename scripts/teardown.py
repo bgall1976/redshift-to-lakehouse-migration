@@ -14,6 +14,7 @@ Required env vars:
   ENVIRONMENT              - Environment name (defaults to dev)
 """
 
+import contextlib
 import json
 import os
 import subprocess
@@ -25,7 +26,7 @@ import requests
 # ── Configuration from environment ──────────────────────────
 HOST = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
 TOKEN = os.environ.get("DATABRICKS_TOKEN", "")
-WAREHOUSE_ID = os.environ.get("BUNDLE_VAR_warehouse_id", "")
+WAREHOUSE_ID = os.environ.get("BUNDLE_VAR_warehouse_id", "")  # noqa: SIM112
 REGION = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
 TF_STATE_BUCKET = os.environ.get("TF_STATE_BUCKET", "")
 KMS_KEY_ID = os.environ.get("KMS_KEY_ID", "")
@@ -107,7 +108,7 @@ def teardown_unity_catalog():
 
     # Drop tables in each schema
     for schema in ["gold", "silver", "bronze", "data_quality"]:
-        run_sql(f"USE CATALOG {CATALOG}", f"use catalog")
+        run_sql(f"USE CATALOG {CATALOG}", "use catalog")
         # List and drop tables
         r = requests.post(
             SQL_API,
@@ -130,12 +131,8 @@ def teardown_unity_catalog():
                 )
 
     # Drop functions in gold
-    run_sql(
-        f"DROP FUNCTION IF EXISTS {CATALOG}.gold.mask_email", "drop mask_email"
-    )
-    run_sql(
-        f"DROP FUNCTION IF EXISTS {CATALOG}.gold.mask_name", "drop mask_name"
-    )
+    run_sql(f"DROP FUNCTION IF EXISTS {CATALOG}.gold.mask_email", "drop mask_email")
+    run_sql(f"DROP FUNCTION IF EXISTS {CATALOG}.gold.mask_name", "drop mask_name")
 
     # Drop schemas
     for schema in ["gold", "silver", "bronze", "data_quality"]:
@@ -185,9 +182,7 @@ def teardown_databricks_groups():
         resources = resp.get("Resources", [])
         if resources:
             gid = resources[0].get("id", "")
-            r2 = requests.delete(
-                f"{HOST}/api/2.0/preview/scim/v2/Groups/{gid}", headers=HEADERS
-            )
+            r2 = requests.delete(f"{HOST}/api/2.0/preview/scim/v2/Groups/{gid}", headers=HEADERS)
             if r2.status_code in (200, 204):
                 print(f"  OK: delete group {group_name}")
             else:
@@ -222,7 +217,65 @@ def teardown_terraform():
         print("  SKIP: TF_STATE_BUCKET not set, skipping terraform destroy")
         return
 
+    # Empty versioned S3 buckets before terraform destroy (required for deletion)
+    result = subprocess.run("aws s3 ls", capture_output=True, text=True, shell=True)
+    if result.returncode == 0:
+        for line in result.stdout.splitlines():
+            parts = line.strip().split()
+            if len(parts) >= 3:
+                bname = parts[-1]
+                if bname.startswith(PROJECT):
+                    print(f"  Emptying versioned bucket: {bname}")
+                    empty_versioned_bucket(bname)
+                    run_cmd(f"aws s3 rm s3://{bname} --recursive", f"empty {bname}")
+
     run_cmd(f'cd "{tf_dir}" && terraform destroy -auto-approve', "terraform destroy")
+
+    # Force-delete any remaining project buckets
+    result = subprocess.run("aws s3 ls", capture_output=True, text=True, shell=True)
+    if result.returncode == 0:
+        for line in result.stdout.splitlines():
+            parts = line.strip().split()
+            if len(parts) >= 3:
+                bname = parts[-1]
+                if bname.startswith(PROJECT):
+                    empty_versioned_bucket(bname)
+                    run_cmd(f"aws s3 rb s3://{bname}", f"force delete {bname}")
+
+
+def empty_versioned_bucket(bucket_name):
+    """Delete all object versions and delete markers from a versioned S3 bucket."""
+    import tempfile
+
+    while True:
+        result = subprocess.run(
+            f"aws s3api list-object-versions --bucket {bucket_name} --max-items 1000 --output json",
+            capture_output=True,
+            text=True,
+            shell=True,
+        )
+        if result.returncode != 0:
+            break
+        data = json.loads(result.stdout)
+        items = []
+        for v in data.get("Versions", []):
+            items.append({"Key": v["Key"], "VersionId": v["VersionId"]})
+        for m in data.get("DeleteMarkers", []):
+            items.append({"Key": m["Key"], "VersionId": m["VersionId"]})
+        if not items:
+            break
+        payload = json.dumps({"Objects": items, "Quiet": True})
+        tmp = os.path.join(tempfile.gettempdir(), "_s3del.json")
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(payload)
+        subprocess.run(
+            f"aws s3api delete-objects --bucket {bucket_name} --delete file://{tmp}",
+            capture_output=True,
+            shell=True,
+        )
+        print(f"    deleted {len(items)} versioned objects")
+    with contextlib.suppress(OSError):
+        os.remove(os.path.join(tempfile.gettempdir(), "_s3del.json"))
 
 
 def teardown_tf_state_bucket():
@@ -231,26 +284,8 @@ def teardown_tf_state_bucket():
     if not TF_STATE_BUCKET:
         print("  SKIP: TF_STATE_BUCKET not set")
         return
-    # Must empty bucket first (versioned objects)
-    run_cmd(
-        f"aws s3api list-object-versions --bucket {TF_STATE_BUCKET} --output json "
-        f"--query \"{{Objects: Versions[].{{Key:Key,VersionId:VersionId}}}}\" > _versions.json "
-        f"&& aws s3api delete-objects --bucket {TF_STATE_BUCKET} --delete file://_versions.json 2>nul",
-        "empty versioned objects",
-    )
-    run_cmd(
-        f"aws s3api list-object-versions --bucket {TF_STATE_BUCKET} --output json "
-        f"--query \"{{Objects: DeleteMarkers[].{{Key:Key,VersionId:VersionId}}}}\" > _markers.json "
-        f"&& aws s3api delete-objects --bucket {TF_STATE_BUCKET} --delete file://_markers.json 2>nul",
-        "empty delete markers",
-    )
-    run_cmd(f"aws s3 rb s3://{TF_STATE_BUCKET} --force", "delete state bucket")
-    # Clean up temp files
-    for f in ["_versions.json", "_markers.json"]:
-        try:
-            os.remove(f)
-        except OSError:
-            pass
+    empty_versioned_bucket(TF_STATE_BUCKET)
+    run_cmd(f"aws s3 rb s3://{TF_STATE_BUCKET}", "delete state bucket")
 
 
 def teardown_kms():
@@ -262,7 +297,7 @@ def teardown_kms():
     run_cmd(
         f"aws kms schedule-key-deletion --key-id {KMS_KEY_ID} "
         f"--pending-window-in-days 7 --region {REGION}",
-        f"schedule KMS key deletion (7-day wait)",
+        "schedule KMS key deletion (7-day wait)",
     )
     run_cmd(
         f"aws kms delete-alias --alias-name alias/{PROJECT}-datalake-key --region {REGION}",
